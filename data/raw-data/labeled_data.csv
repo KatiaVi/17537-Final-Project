@@ -1,0 +1,12 @@
+Total Num of Messages,24783,
+Num of offensive_language Messages (1),19190,
+Num of hate_speech messages (0),1430,
+Num of neither (2),4163,
+,,
+Problems,Example,Notes
+"Primary Key (first column in labeled_data) is non consistent, i.e. message id 86 is missing)",Message with id 86 is missing,
+There are a few unknown characters in some of the messages (could be emojis),"""&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;&#128514;@VandalSavage_: Teanna Trump probably cleaner than most of these twitter hoes but.........""",If the unknown character represent emojis could be useful (in context detection…if the emoji is a flag of some country or a religious symbol)
+,,
+,,
+,,"Since we are analyzing the hate topic of each message this might be hard to do with just looking at each message individually, is there a way to get the topic that each messge is referring to (i.e. the original post?)"
+,,Are these just comments or original messages? We might want to focus on just original messages since they might have more info about the context
