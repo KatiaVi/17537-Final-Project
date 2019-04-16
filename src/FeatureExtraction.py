@@ -119,7 +119,8 @@ def POS_tfidf(corpus):
             max_features=10000)
     word_vectorizer.fit(pd.Series(all_tags))
     tfidf = word_vectorizer.transform(pd.Series(all_tags)).toarray()
-    return tfidf, word_vectorizer
+    pos_vocab = {v:i for i, v in enumerate(word_vectorizer.get_feature_names())}
+    return tfidf, word_vectorizer, pos_vocab
     
 #Lemmatizes the words
 #INPUT: from POS the list of (word, tag) tuples
@@ -145,11 +146,29 @@ def Ngrams_Full(corpus):
     char_vectorizer = TfidfVectorizer(
             analyzer='char',
             stop_words='english',
-            ngram_range=(3, 3),
-            max_features=50000)
+            ngram_range=(3, 5),
+            max_features=5000,
+            max_df = 0.5)
     char_vectorizer.fit(pd.Series(all_n))
     tfidf = char_vectorizer.transform(pd.Series(all_n)).toarray()
-    return tfidf, char_vectorizer
+    vocab = {v:i for i,v in enumerate(char_vectorizer.get_feature_names())}
+    return tfidf, char_vectorizer, vocab
+
+def Ngrams_Words(corpus):
+    all_n = []
+    for s in corpus:
+        s_c = clean(s)
+        s_lem = lem(s_c)
+        all_n.append(s_lem)
+    full_vectorizer = TfidfVectorizer(
+            analyzer='char',
+            stop_words='english',
+            ngram_range=(1, 3),
+            max_features=5000,
+            max_df = 0.5)
+    full_vectorizer.fit(pd.Series(all_n))
+    tfidf = full_vectorizer.transform(pd.Series(all_n)).toarray()
+    return tfidf, full_vectorizer
 
 #Outputs compound value from VaderSentimentAnalysis
 #INPUT: pre-processed string
@@ -165,8 +184,15 @@ def BlobSentiment(input_text):
 
 #Extracts all the features (main function to call on training data)
 def FeatureExtraction(tweets):
-    pos, word_vectorizer = POS_tfidf(tweets)
-    n_grams3, char_vectorizer = Ngrams_Full(tweets)
+    pos, word_vectorizer, pos_names = POS_tfidf(tweets)
+    n_grams3, char_vectorizer, n_names = Ngrams_Full(tweets)
+    n_gramsw, full_vectorizer = Ngrams_Words(tweets)
+    pos_keys = ['']*len(pos_names)
+    n_keys = ['']*len(n_names)
+    for k,v in pos_names.items():
+        pos_keys[v] = k
+    for k,v in n_names.items():
+        n_keys[v] = k
     feature_arr = []
     for t in tweets:
         t_c = clean(t)
@@ -175,8 +201,10 @@ def FeatureExtraction(tweets):
         caps, words = words_caps(t_c)
         features = [pol, subj, sentiment, caps, words]
         feature_arr.append(features)
-    M = np.concatenate((n_grams3, pos, np.array(feature_arr)), axis=1)
-    return M, word_vectorizer, char_vectorizer
+    M = np.concatenate((n_grams3, n_gramsw, pos, np.array(feature_arr)), axis=1)
+    feature_names = ["polarity", "subjectivity", "sentiment", "caps", "words"]
+    final_features = pos_keys + n_keys + feature_names
+    return M, word_vectorizer, char_vectorizer, full_vectorizer, final_features
 
 #Gets the Ngrams TF-IDF for testing data
 #Input: all tweets, char_vectorizer from the training FeatureExtraction output
@@ -187,6 +215,15 @@ def Ngrams_Test(corpus, char_vectorizer):
         s_lem = lem(s_c)
         all_n.append(s_lem)
     tfidf = char_vectorizer.transform(pd.Series(all_n)).toarray()
+    return tfidf
+
+def Ngrams_Twords(corpus, full_vectorizer):
+    all_n = []
+    for s in corpus:
+        s_c = clean(s)
+        s_lem = lem(s_c)
+        all_n.append(s_lem)
+    tfidf = full_vectorizer.transform(pd.Series(all_n)).toarray()
     return tfidf
 
 #Gets the POS TF-IDF for testing data
@@ -202,9 +239,10 @@ def Pos_Test(corpus, word_vectorizer):
 
 #Main function to call for testing data feature extraction
 #Input: testing tweets, word_vectorizer + char_vectorizer from training output
-def FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer):
+def FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer, full_vectorizer):
     pos = Pos_Test(tweets, word_vectorizer)
     n_grams3 = Ngrams_Test(tweets, char_vectorizer)
+    n_gramsw = Ngrams_Twords(tweets, full_vectorizer)
     feature_arr = []
     for t in tweets:
         t_c = clean(t)
@@ -213,7 +251,7 @@ def FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer):
         caps, words = words_caps(t_c)
         features = [pol, subj, sentiment, caps, words]
         feature_arr.append(features)
-    M = np.concatenate((n_grams3, pos, np.array(feature_arr)), axis=1)
+    M = np.concatenate((n_grams3, n_gramsw, pos, np.array(feature_arr)), axis=1)
     return M
 
 

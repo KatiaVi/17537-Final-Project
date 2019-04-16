@@ -9,9 +9,12 @@
 import os
 from argparse import ArgumentParser
 import csv
+import pickle
 
+import sklearn
 from sklearn.externals import joblib
 from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report
 
 from FeatureExtraction import *
 
@@ -37,28 +40,32 @@ def main(model_path, input_data_path, labels_data_path):
         model = joblib.load(model_path+"model.sav")
         word_vectorizer = joblib.load(model_path + "word_vectorizer.sav")
         char_vectorizer = joblib.load(model_path + "char_vectorizer.sav")
+        full_vectorizer = joblib.load(model_path + "full_vectorizer.sav")
     
     
     # Load and format data to prepare for feature extraction
-    tweets = load_and_format_raw_data(input_data_path)
-    true_labels = load_and_format_raw_data(labels_data_path)
-    M = FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer)
+    tweets = pickle.load(open('xtest.p', 'rb'))
+    true_labels = pickle.load(open('ytest.p', 'rb'))
+    #tweets = load_and_format_raw_data(input_data_path)
+    #true_labels = load_and_format_raw_data(labels_data_path)
+    M = FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer, full_vectorizer)
     
     # Predict Labels
     predicted_labels = model.predict(M)
     
     # Compute FScore
-    f1score = sklearn.metrics.f1_score(true_labels,predicted_labels)
-    print("F1 Score: " + f1score)
+    f1score = sklearn.metrics.f1_score(true_labels,predicted_labels, average=None)
+    print(f1score)
+    print(classification_report(true_labels, predicted_labels))
 
     
     
 if __name__ == "__main__":
     parser = ArgumentParser()
 
-    parser.add_argument("--model_path", type=str, default="../model/")
-    parser.add_argument("--input_data_path", type=str, default="../data/test_input_data.csv")
-    parser.add_argument("--labels_data_path", type=str, default="../data/test_labels_data.csv")
+    parser.add_argument("--model_path", type=str, default="./")
+    parser.add_argument("--input_data_path", type=str, default="./test_input_data.csv")
+    parser.add_argument("--labels_data_path", type=str, default="./test_labels_data.csv")
 
     
     args = parser.parse_args()
