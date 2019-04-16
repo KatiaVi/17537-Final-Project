@@ -46,7 +46,7 @@ def load_and_format_raw_data(data_path):
             
 raw_data_path = "./labeled_data.csv"
 
-def main(model_path, input_data_path, labels_data_path, vinput_data_path, vlabels_data_path):
+def main(model_path, input_data_path, labels_data_path, vinput_data_path, vlabels_data_path, saved_features_path):
     
     # Create directory to save the learned model in given model_path
     if not os.path.exists(model_path):
@@ -66,15 +66,45 @@ def main(model_path, input_data_path, labels_data_path, vinput_data_path, vlabel
     vlabels = pickle.load(open('yvalid.p', 'rb'))
     #vlabels = load_and_format_raw_data(vlabels_data_path)
     
-    print("Extracting Features ...")
-    M, word_vectorizer, char_vectorizer, full_vectorizer, names = FeatureExtraction(tweets)
-    Mp = FeatureExtractionTest(vinputs, word_vectorizer, char_vectorizer, full_vectorizer)
-    #Mt = FeatureExtractionTest(X_test, word_vectorizer, char_vectorizer, full_vectorizer)
     
-    # Obtain Most Relevant Features
-    #  print("Finding Most Relevant Features ...")
-    #select = SelectFromModel(LogisticRegression(class_weight="balanced",penalty="l1", C=0.01))
-    #M_ = select.fit_transform(M,final_labels)
+    if os.path.exists(saved_features_path):
+        print("Loading Extracted Features ...")
+        
+        M = pickle.load(open(saved_features_path, 'rb'))
+        word_vectorizer = joblib.load(model_path + 'word_vectorizer.sav')
+        char_vectorizer = joblib.load(model_path + 'char_vectorizer.sav')
+        full_vectorizer = joblib.load(model_path + 'full_vectorizer.sav')
+        
+    else:
+        print("Extracting Features ...")
+        M, word_vectorizer, char_vectorizer, full_vectorizer, names = FeatureExtraction(tweets)
+        
+        # Save components of feature extraction step
+    
+        # Save word vectorizer
+        word_vec_filename = model_path + "word_vectorizer.sav"
+        joblib.dump(word_vectorizer, word_vec_filename)
+
+
+        # Save char vectorizer
+        char_vec_filename = model_path + "char_vectorizer.sav"
+        joblib.dump(char_vectorizer, char_vec_filename)
+
+        # Save full vectorizer
+        full_vec_filename = model_path + "full_vectorizer.sav"
+        joblib.dump(full_vectorizer, full_vec_filename)
+        
+        pickle.dump(M, open(saved_features_path, "wb" ))
+
+    
+        #Mt = FeatureExtractionTest(X_test, word_vectorizer, char_vectorizer, full_vectorizer)
+    
+        # Obtain Most Relevant Features
+        #  print("Finding Most Relevant Features ...")
+        #select = SelectFromModel(LogisticRegression(class_weight="balanced",penalty="l1", C=0.01))
+        #M_ = select.fit_transform(M,final_labels)
+    
+    Mp = FeatureExtractionTest(vinputs, word_vectorizer, char_vectorizer, full_vectorizer)
     
     # Train model
     print("Training Model ...")
@@ -100,18 +130,7 @@ def main(model_path, input_data_path, labels_data_path, vinput_data_path, vlabel
     # Save trained model 
     trained_model_filename = model_path+"model.sav"
     joblib.dump(model, trained_model_filename)
-    
-    # Save word vectorizer
-    word_vec_filename = model_path + "word_vectorizer.sav"
-    joblib.dump(word_vectorizer, word_vec_filename)
 
-
-    # Save char vectorizer
-    char_vec_filename = model_path + "char_vectorizer.sav"
-    joblib.dump(char_vectorizer, char_vec_filename)
-
-    full_vec_filename = model_path + "full_vectorizer.sav"
-    joblib.dump(full_vectorizer, full_vec_filename)
     
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -121,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--labels_data_path", type=str, default="./train_labels_data.csv")
     parser.add_argument("--vinput_data_path", type=str, default="./valid_input_data.csv")
     parser.add_argument("--vlabels_data_path", type=str, default="./valid_labels_data.csv")
+    parser.add_argument("--saved_features_path", type=str, default="./extracted_features.p")
     
     args = parser.parse_args()
     main(**vars(args))
