@@ -10,10 +10,12 @@ HOW TO USE:
     To extract features for training data:
         -call FeatureExtraction(tweets)
         -output is M, the features, a TFIDF vectorizer for POS, 
-            and a TFIDF vectorizer for n-grams.
+            and a TFIDF vectorizer for character n-grams, and a TFIDF 
+            vectorizer for word n-grams
         -use M to train the model, the other two are needed for testing
     To extract features for testing data:
-        -call FeatureExtraction(tweets, pos vectorizer, ngram vectorizer)
+        -call FeatureExtraction(tweets, pos vectorizer, ngram vectorizer, word
+        vectorizer)
         -output is M, the features
         -use M to test the model
 """
@@ -148,7 +150,7 @@ def Ngrams_Full(corpus):
             stop_words='english',
             ngram_range=(3, 5),
             max_features=5000,
-            max_df = 0.5)
+            max_df = 0.55)
     char_vectorizer.fit(pd.Series(all_n))
     tfidf = char_vectorizer.transform(pd.Series(all_n)).toarray()
     vocab = {v:i for i,v in enumerate(char_vectorizer.get_feature_names())}
@@ -163,9 +165,9 @@ def Ngrams_Words(corpus):
     full_vectorizer = TfidfVectorizer(
             analyzer='char',
             stop_words='english',
-            ngram_range=(1, 3),
+            ngram_range=(1, 4),
             max_features=5000,
-            max_df = 0.5)
+            max_df = 0.55)
     full_vectorizer.fit(pd.Series(all_n))
     tfidf = full_vectorizer.transform(pd.Series(all_n)).toarray()
     return tfidf, full_vectorizer
@@ -174,7 +176,7 @@ def Ngrams_Words(corpus):
 #INPUT: pre-processed string
 def VaderSentiment(input_text):
     sentiment = sentiment_analyzer.polarity_scores(input_text)
-    return sentiment['compound']
+    return sentiment['compound'], sentiment['pos'], sentiment['neg'], sentiment['neu']
 
 #Outputs polarity and subjectivity from TextBlob sentiment analysis
 #INPUT: pre-processed string
@@ -196,10 +198,10 @@ def FeatureExtraction(tweets):
     feature_arr = []
     for t in tweets:
         t_c = clean(t)
-        sentiment = VaderSentiment(t_c)
+        sentiment, spos, sneg, sneu = VaderSentiment(t_c)
         pol, subj = BlobSentiment(t_c)
         caps, words = words_caps(t_c)
-        features = [pol, subj, sentiment, caps, words]
+        features = [pol, subj, sentiment, spos, sneg, sneu, caps, words]
         feature_arr.append(features)
     M = np.concatenate((n_grams3, n_gramsw, pos, np.array(feature_arr)), axis=1)
     feature_names = ["polarity", "subjectivity", "sentiment", "caps", "words"]
@@ -246,10 +248,10 @@ def FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer, full_vectori
     feature_arr = []
     for t in tweets:
         t_c = clean(t)
-        sentiment = VaderSentiment(t_c)
+        sentiment, spos, sneg, sneu = VaderSentiment(t_c)
         pol, subj = BlobSentiment(t_c)
         caps, words = words_caps(t_c)
-        features = [pol, subj, sentiment, caps, words]
+        features = [pol, subj, sentiment, spos, sneg, sneu, caps, words]
         feature_arr.append(features)
     M = np.concatenate((n_grams3, n_gramsw, pos, np.array(feature_arr)), axis=1)
     return M

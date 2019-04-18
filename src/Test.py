@@ -46,8 +46,6 @@ def main(model_path, input_data_path, labels_data_path):
     # Load and format data to prepare for feature extraction
     tweets = pickle.load(open('xtest.p', 'rb'))
     true_labels = pickle.load(open('ytest.p', 'rb'))
-    #tweets = load_and_format_raw_data(input_data_path)
-    #true_labels = load_and_format_raw_data(labels_data_path)
     M = FeatureExtractionTest(tweets, word_vectorizer, char_vectorizer, full_vectorizer)
     
     # Predict Labels
@@ -63,7 +61,7 @@ def main(model_path, input_data_path, labels_data_path):
 if __name__ == "__main__":
     parser = ArgumentParser()
 
-    parser.add_argument("--model_path", type=str, default="./")
+    parser.add_argument("--model_path", type=str, default="../model/")
     parser.add_argument("--input_data_path", type=str, default="./test_input_data.csv")
     parser.add_argument("--labels_data_path", type=str, default="./test_labels_data.csv")
 

@@ -29,7 +29,7 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import f1_score
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
-
+from sklearn.neural_network import MLPClassifier
 from sklearn.feature_selection import SelectFromModel
 
 
@@ -57,33 +57,21 @@ def main(model_path, input_data_path, labels_data_path, vinput_data_path, vlabel
                 raise
     
     # Load and format data to prepare for feature extraction
-    tweets = pickle.load(open('xtrain.p', 'rb'))
-    #tweets = load_and_format_raw_data(input_data_path)
-    labels = pickle.load(open('ytrain.p', 'rb'))
-    #labels = load_and_format_raw_data(labels_data_path)
-    vinputs = pickle.load(open('xvalid.p', 'rb'))
-    #vinputs = load_and_format_raw_data(vinput_data_path)
-    vlabels = pickle.load(open('yvalid.p', 'rb'))
-    #vlabels = load_and_format_raw_data(vlabels_data_path)
+    tweets = pickle.load(open('../data/xtrain.p', 'rb'))
+    labels = pickle.load(open('../data/ytrain.p', 'rb'))
+    vinputs = pickle.load(open('../data/xvalid.p', 'rb'))
+    vlabels = pickle.load(open('../data/yvalid.p', 'rb'))
     
     print("Extracting Features ...")
     M, word_vectorizer, char_vectorizer, full_vectorizer, names = FeatureExtraction(tweets)
     Mp = FeatureExtractionTest(vinputs, word_vectorizer, char_vectorizer, full_vectorizer)
-    #Mt = FeatureExtractionTest(X_test, word_vectorizer, char_vectorizer, full_vectorizer)
-    
-    # Obtain Most Relevant Features
-    #  print("Finding Most Relevant Features ...")
-    #select = SelectFromModel(LogisticRegression(class_weight="balanced",penalty="l1", C=0.01))
-    #M_ = select.fit_transform(M,final_labels)
     
     # Train model
     print("Training Model ...")
 
-    #model = LinearSVC(C=0.95, max_iter=4000).fit(M, labels)
     model1 = LogisticRegression(penalty='l2', class_weight='balanced', C=0.95, solver='liblinear', multi_class='ovr')
     model2 = RandomForestClassifier(n_estimators=100, class_weight={0:0.85, 1:0.05, 2:0.10})
-    model = VotingClassifier(estimators=[('lr', model1), ('rf', model2)], voting='hard').fit(M, labels)
-    
+    model = VotingClassifier(estimators=[('lr', model1), ('rf', model2)], voting='hard', weights=[1,1]).fit(M, labels)
     
     l_predict = model.predict(M)
     f1score = f1_score(labels,l_predict, average=None)
